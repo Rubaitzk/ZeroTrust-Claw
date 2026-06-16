@@ -1,5 +1,6 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env') });
 const { Client, GatewayIntentBits } = require('discord.js');
+const { exec } = require('child_process');
 
 // ---------------------------------------------------------------------------
 // Discord client setup — we need message content intent to read commands
@@ -55,8 +56,46 @@ client.on('messageCreate', async (message) => {
     return;
   }
 
-  // ── Anything else — log for now (OpenClaw intercept point) ──────────
-  console.log(`[bot] Unhandled message from ${message.author.tag}: "${content}"`);
+  // ── Anything else — forward to OpenClaw ─────────────────────────────
+  if (content.startsWith('!')) return; // ignore unknown bang-commands
+
+  // Sanitize input: strip anything that isn't alphanumeric, whitespace,
+  // or basic punctuation to prevent shell injection.
+  const sanitized = content.replace(/[^a-zA-Z0-9 .,!?'\-]/g, '');
+
+  if (!sanitized.length) {
+    await message.reply('⚠️ Message contained no usable text after sanitization.');
+    return;
+  }
+
+  console.log(`[bot] Forwarding to OpenClaw: "${sanitized}"`);
+
+  // Show typing indicator while OpenClaw processes
+  await message.channel.sendTyping();
+
+  const cmd = `openclaw run "${sanitized}"`;
+
+  exec(cmd, { cwd: require('path').resolve(__dirname, '..'), timeout: 60_000 }, async (err, stdout, stderr) => {
+    if (err) {
+      console.error('[bot] OpenClaw exec error:', err.message);
+      const errorMsg = stderr?.trim() || err.message;
+      await message.reply(`❌ OpenClaw error:\n\`\`\`\n${errorMsg.slice(0, 1800)}\n\`\`\``);
+      return;
+    }
+
+    const output = stdout.trim();
+    if (!output) {
+      await message.reply('🤖 OpenClaw returned no output.');
+      return;
+    }
+
+    // Discord messages are capped at 2000 characters
+    if (output.length > 1900) {
+      await message.reply(output.slice(0, 1900) + '\n… *(truncated)*');
+    } else {
+      await message.reply(output);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
