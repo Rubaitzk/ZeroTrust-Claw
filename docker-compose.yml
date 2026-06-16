@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+
+  target-app:
+    build:
+      context: ./apps/target-app
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - '3001:3001'
+    depends_on:
+      - redis
+
+  auth0-gate:
+    build:
+      context: ./apps/auth0-gate
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - '3002:3002'
+    depends_on:
+      - redis
+
+  agent-wrapper:
+    build:
+      context: ./apps/agent-wrapper
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - '3003:3003'
+    depends_on:
+      - redis
+      - auth0-gate
+
+  chat-interface:
+    build:
+      context: ./apps/chat-interface
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      - agent-wrapper
+    restart: unless-stopped
+
+networks:
+  default:
+    driver: bridge

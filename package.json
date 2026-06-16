@@ -1,0 +1,33 @@
+{
+  "name": "zerotrust-claw",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start:target-app": "npm --workspace=@zerotrust-claw/target-app start",
+    "start:auth0-gate": "npm --workspace=@zerotrust-claw/auth0-gate start",
+    "start:agent-wrapper": "npm --workspace=@zerotrust-claw/agent-wrapper start",
+    "start:chat-interface": "npm --workspace=@zerotrust-claw/chat-interface start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rubaitzk/ZeroTrust-Claw.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Rubaitzk/ZeroTrust-Claw/issues"
+  },
+  "homepage": "https://github.com/Rubaitzk/ZeroTrust-Claw#readme",
+  "dependencies": {
+    "discord.js": "^14.26.2",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "express-openid-connect": "^2.20.1"
+  },
+  "workspaces": [
+    "apps/*"
+  ]
+}
